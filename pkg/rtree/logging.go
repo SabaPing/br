@@ -38,7 +38,7 @@ func (rs rangesMarshaler) MarshalLogObject(encoder zapcore.ObjectEncoder) error 
 	for _, r := range rs {
 		elements = append(elements, r.String())
 	}
-	_ = encoder.AddArray("ranges", logutil.AbbreviatedArrayMarshaler(elements))
+	_ = encoder.AddArray("ranges", logutil.AbbreviatedArrayMarshaller(elements))
 
 	totalKV := uint64(0)
 	totalBytes := uint64(0)

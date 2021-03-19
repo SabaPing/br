@@ -17,11 +17,11 @@ import (
 	"github.com/pingcap/br/pkg/redact"
 )
 
-// AbbreviatedArrayMarshaler abbreviates an array of elements.
-type AbbreviatedArrayMarshaler []string
+// AbbreviatedArrayMarshaller abbreviates an array of elements.
+type AbbreviatedArrayMarshaller []string
 
 // MarshalLogArray implements zapcore.ArrayMarshaler.
-func (abb AbbreviatedArrayMarshaler) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
+func (abb AbbreviatedArrayMarshaller) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	if len(abb) <= 4 {
 		for _, e := range abb {
 			encoder.AppendString(e)
@@ -39,12 +39,12 @@ func (abb AbbreviatedArrayMarshaler) MarshalLogArray(encoder zapcore.ArrayEncode
 func AbbreviatedArray(
 	key string, elements interface{}, marshalFunc func(interface{}) []string,
 ) zap.Field {
-	return zap.Array(key, AbbreviatedArrayMarshaler(marshalFunc(elements)))
+	return zap.Array(key, AbbreviatedArrayMarshaller(marshalFunc(elements)))
 }
 
-type zapFileMarshaler struct{ *backuppb.File }
+type zapFileMarshaller struct{ *backuppb.File }
 
-func (file zapFileMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (file zapFileMarshaller) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("name", file.GetName())
 	enc.AddString("CF", file.GetCf())
 	enc.AddString("sha256", hex.EncodeToString(file.GetSha256()))
@@ -58,16 +58,16 @@ func (file zapFileMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-type zapFilesMarshaler []*backuppb.File
+type zapFilesMarshaller []*backuppb.File
 
-func (fs zapFilesMarshaler) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+func (fs zapFilesMarshaller) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	total := len(fs)
 	encoder.AddInt("total", total)
 	elements := make([]string, 0, total)
 	for _, f := range fs {
 		elements = append(elements, f.GetName())
 	}
-	_ = encoder.AddArray("files", AbbreviatedArrayMarshaler(elements))
+	_ = encoder.AddArray("files", AbbreviatedArrayMarshaller(elements))
 
 	totalKVs := uint64(0)
 	totalBytes := uint64(0)
@@ -85,17 +85,17 @@ func (fs zapFilesMarshaler) MarshalLogObject(encoder zapcore.ObjectEncoder) erro
 
 // File make the zap fields for a file.
 func File(file *backuppb.File) zap.Field {
-	return zap.Object("file", zapFileMarshaler{file})
+	return zap.Object("file", zapFileMarshaller{file})
 }
 
 // Files make the zap field for a set of file.
 func Files(fs []*backuppb.File) zap.Field {
-	return zap.Object("files", zapFilesMarshaler(fs))
+	return zap.Object("files", zapFilesMarshaller(fs))
 }
 
-type zapRewriteRuleMarshaler struct{ *import_sstpb.RewriteRule }
+type zapRewriteRuleMarshaller struct{ *import_sstpb.RewriteRule }
 
-func (rewriteRule zapRewriteRuleMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (rewriteRule zapRewriteRuleMarshaller) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("oldKeyPrefix", hex.EncodeToString(rewriteRule.GetOldKeyPrefix()))
 	enc.AddString("newKeyPrefix", hex.EncodeToString(rewriteRule.GetNewKeyPrefix()))
 	enc.AddUint64("newTimestamp", rewriteRule.GetNewTimestamp())
@@ -104,12 +104,12 @@ func (rewriteRule zapRewriteRuleMarshaler) MarshalLogObject(enc zapcore.ObjectEn
 
 // RewriteRule make the zap fields for a rewrite rule.
 func RewriteRule(rewriteRule *import_sstpb.RewriteRule) zap.Field {
-	return zap.Object("rewriteRule", zapRewriteRuleMarshaler{rewriteRule})
+	return zap.Object("rewriteRule", zapRewriteRuleMarshaller{rewriteRule})
 }
 
-type zapMarshalRegionMarshaler struct{ *metapb.Region }
+type zapMarshalRegionMarshaller struct{ *metapb.Region }
 
-func (region zapMarshalRegionMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (region zapMarshalRegionMarshaller) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	peers := make([]string, 0, len(region.GetPeers()))
 	for _, peer := range region.GetPeers() {
 		peers = append(peers, peer.String())
@@ -124,7 +124,7 @@ func (region zapMarshalRegionMarshaler) MarshalLogObject(enc zapcore.ObjectEncod
 
 // Region make the zap fields for a region.
 func Region(region *metapb.Region) zap.Field {
-	return zap.Object("region", zapMarshalRegionMarshaler{region})
+	return zap.Object("region", zapMarshalRegionMarshaller{region})
 }
 
 // Leader make the zap fields for a peer.
@@ -133,9 +133,9 @@ func Leader(peer *metapb.Peer) zap.Field {
 	return zap.String("leader", peer.String())
 }
 
-type zapSSTMetaMarshaler struct{ *import_sstpb.SSTMeta }
+type zapSSTMetaMarshaller struct{ *import_sstpb.SSTMeta }
 
-func (sstMeta zapSSTMetaMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (sstMeta zapSSTMetaMarshaller) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("CF", sstMeta.GetCfName())
 	enc.AddBool("endKeyExclusive", sstMeta.EndKeyExclusive)
 	enc.AddUint32("CRC32", sstMeta.Crc32)
@@ -156,19 +156,19 @@ func (sstMeta zapSSTMetaMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) e
 
 // SSTMeta make the zap fields for a SST meta.
 func SSTMeta(sstMeta *import_sstpb.SSTMeta) zap.Field {
-	return zap.Object("sstMeta", zapSSTMetaMarshaler{sstMeta})
+	return zap.Object("sstMeta", zapSSTMetaMarshaller{sstMeta})
 }
 
-type zapKeysMarshaler [][]byte
+type zapKeysMarshaller [][]byte
 
-func (keys zapKeysMarshaler) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+func (keys zapKeysMarshaller) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	total := len(keys)
 	encoder.AddInt("total", total)
 	elements := make([]string, 0, total)
 	for _, k := range keys {
 		elements = append(elements, redact.Key(k))
 	}
-	_ = encoder.AddArray("keys", AbbreviatedArrayMarshaler(elements))
+	_ = encoder.AddArray("keys", AbbreviatedArrayMarshaller(elements))
 	return nil
 }
 
@@ -179,7 +179,7 @@ func Key(fieldKey string, key []byte) zap.Field {
 
 // Keys constructs a field that carries upper hex format keys.
 func Keys(keys [][]byte) zap.Field {
-	return zap.Object("keys", zapKeysMarshaler(keys))
+	return zap.Object("keys", zapKeysMarshaller(keys))
 }
 
 // ShortError make the zap field to display error without verbose representation (e.g. the stack trace).
